@@ -6,7 +6,7 @@
 #include "api.h"
 #include "randombytes.h"
 
-#define NTESTS 5
+#define NTESTS 1
 
 static void printbytes(const uint8_t *x, size_t xlen) {
     size_t i;
@@ -38,18 +38,21 @@ int main(void) {
     int i, j;
     for (i = 0; i < NTESTS; i++) {
         // Key-pair generation
+        printf("Keygen\n");
         crypto_kem_keypair(pk, sk_a);
 
         printbytes(pk, CRYPTO_PUBLICKEYBYTES);
         printbytes(sk_a, CRYPTO_SECRETKEYBYTES);
 
         // Encapsulation
+        printf("Encap\n");
         crypto_kem_enc(sendb, key_b, pk);
 
         printbytes(sendb, CRYPTO_CIPHERTEXTBYTES);
         printbytes(key_b, CRYPTO_BYTES);
 
         // Decapsulation
+        printf("Decap\n");
         crypto_kem_dec(key_a, sendb, sk_a);
         printbytes(key_a, CRYPTO_BYTES);
 

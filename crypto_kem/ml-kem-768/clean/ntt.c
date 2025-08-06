@@ -1,6 +1,7 @@
 #include "ntt.h"
 #include "params.h"
 #include "reduce.h"
+#include <stdio.h>
 #include <stdint.h>
 
 /* Code to generate PQCLEAN_MLKEM768_CLEAN_zetas and zetas_inv used in the number-theoretic transform:
@@ -78,6 +79,7 @@ static int16_t fqmul(int16_t a, int16_t b) {
 * Arguments:   - int16_t r[256]: pointer to input/output vector of elements of Zq
 **************************************************/
 void PQCLEAN_MLKEM768_CLEAN_ntt(int16_t r[256]) {
+    printf("hello from ntt\n");
     unsigned int len, start, j, k;
     int16_t t, zeta;
 
@@ -104,6 +106,7 @@ void PQCLEAN_MLKEM768_CLEAN_ntt(int16_t r[256]) {
 * Arguments:   - int16_t r[256]: pointer to input/output vector of elements of Zq
 **************************************************/
 void PQCLEAN_MLKEM768_CLEAN_invntt(int16_t r[256]) {
+    printf("hello from intt\n");
     unsigned int start, len, j, k;
     int16_t t, zeta;
     const int16_t f = 1441; // mont^2/128
