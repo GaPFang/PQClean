@@ -73,15 +73,24 @@ def fqmul(a: int, b: int) -> int:
 def BFU(vec0, vec1, twiddles, intt=False):
     """Perform a basic functional unit operation."""
     for i in range(len(vec0)):
+        if intt:
+            vec0[i], vec1[i] = vec0[i] + vec1[i], vec1[i] - vec0[i]
+        t = fqmul(twiddles[i], vec1[i])
+        if intt:
+            if vec0[i] > Q:
+                vec0[i] -= Q
+            vec1[i] = t
         if not intt:
-            t = fqmul(twiddles[i], vec1[i])
-            vec1[i] = vec0[i] - t
-            vec0[i] = vec0[i] + t
-        else:
-            u = vec0[i] + vec1[i]
-            u = u if u < Q else u - Q
-            # vec0[i], vec1[i] = barrett_reduce(vec0[i] + vec1[i]), fqmul(twiddles[i], vec1[i] - vec0[i])
-            vec0[i], vec1[i] = u, fqmul(twiddles[i], vec1[i] - vec0[i])
+            vec0[i], vec1[i] = vec0[i] + t, vec0[i] - t
+        # if not intt:
+        #     t = fqmul(twiddles[i], vec1[i])
+        #     vec1[i] = vec0[i] - t
+        #     vec0[i] = vec0[i] + t
+        # else:
+        #     u = vec0[i] + vec1[i]
+        #     u = u if u < Q else u - Q
+        #     # vec0[i], vec1[i] = barrett_reduce(vec0[i] + vec1[i]), fqmul(twiddles[i], vec1[i] - vec0[i])
+        #     vec0[i], vec1[i] = u, fqmul(twiddles[i], vec1[i] - vec0[i])
 
 def print_groups(groups):
     """Print the groups of indices."""
