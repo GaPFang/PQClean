@@ -136,75 +136,94 @@ def permute_intt(vec0, vec1, intt=False):
 
 def stage(s: int, k: int, banks: list, groups: list, num_bfu: int, intt=False):
     if intt:
-        s = 8 - s  # Reverse the stage for inverse NTT
-    if s == 1:
-        for i in range(len(banks[0])):
+        s = 6 - s  # Reverse the stage for inverse NTT
+    for i in range(len(banks[0])):
+        group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
+        twiddles_used = [twiddles[intt][k + ((i >> 2) << s)] for _ in range(num_bfu)]
+        if s == 0:
             group_indices = [banks[xor_all_bits(i)][i // 2], banks[xor_all_bits(i) ^ 1][i // 2 + 2]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
-            BFU(group0, group1, [twiddles[intt][k] for _ in range(num_bfu)], intt=intt)
-        # print_groups(groups)
-    elif s == 2:
-        for i in range(len(banks[0])):
+        if s == 1:
             group_indices = [banks[xor_all_bits(i)][i // 2 * 2], banks[xor_all_bits(i) ^ 1][i // 2 * 2 + 1]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
-            BFU(group0, group1, [twiddles[intt][k + i // 2] for _ in range(num_bfu)], intt=intt)
-        # print_groups(groups)
-    elif s == 3:
-        for i in range(len(banks[0])):
-            group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
+        group0 = groups[group_indices[0]]
+        group1 = groups[group_indices[1]]
+        if s >= 2:
+            twiddles_used = [twiddles[intt][k + ((i << (s - 2))) + (j % (1 << (s - 2)))] for j in range(num_bfu)]
             permute_intt(group0, group1, intt=intt)
-            BFU(group0, group1, [twiddles[intt][k + i] for _ in range(num_bfu)], intt=intt)
-            permute_ntt(group0, group1, intt=intt)
-        # print_groups(groups)
-    elif s == 4:
-        for i in range(len(banks[0])):
-            group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
+        if s == 6:
             permute_intt(group0, group1, intt=intt)
-            BFU(group0, group1, [twiddles[intt][k + i * 2 + j % 2] for j in range(num_bfu)], intt=intt)
+        BFU(group0, group1, twiddles_used, intt=intt)
+        if s >= 2:
             permute_ntt(group0, group1, intt=intt)
-        # print_groups(groups)
-    elif s == 5:
-        for i in range(len(banks[0])):
-            group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
-            permute_intt(group0, group1, intt=intt)
-            BFU(group0, group1, [twiddles[intt][k + i * 4 + j % 4] for j in range(num_bfu)], intt=intt)
+        if s == 6:
             permute_ntt(group0, group1, intt=intt)
-        # print_groups(groups)
-    elif s == 6:
-        for i in range(len(banks[0])):
-            group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
-            permute_intt(group0, group1, intt=intt)
-            BFU(group0, group1, [twiddles[intt][k + i * 8 + j % 8] for j in range(num_bfu)], intt=intt)
-            permute_ntt(group0, group1, intt=intt)
-        # print_groups(groups)
-    elif s == 7:
-        for i in range(len(banks[0])):
-            group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
-            # print(group_indices)
-            group0 = groups[group_indices[0]]
-            group1 = groups[group_indices[1]]
-            permute_intt(group0, group1, intt=intt)
-            permute_intt(group0, group1, intt=intt)
-            BFU(group0, group1, [twiddles[intt][k + i * 16 + j % 16] for j in range(num_bfu)], intt=intt)
-            permute_ntt(group0, group1, intt=intt)
-            permute_ntt(group0, group1, intt=intt)
-        # print_groups(groups)
+    # if s == 0:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i // 2], banks[xor_all_bits(i) ^ 1][i // 2 + 2]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         BFU(group0, group1, [twiddles[intt][k] for _ in range(num_bfu)], intt=intt)
+    #     # print_groups(groups)
+    # elif s == 1:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i // 2 * 2], banks[xor_all_bits(i) ^ 1][i // 2 * 2 + 1]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         BFU(group0, group1, [twiddles[intt][k + i // 2] for _ in range(num_bfu)], intt=intt)
+    #     # print_groups(groups)
+    # elif s == 2:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         permute_intt(group0, group1, intt=intt)
+    #         BFU(group0, group1, [twiddles[intt][k + i] for _ in range(num_bfu)], intt=intt)
+    #         permute_ntt(group0, group1, intt=intt)
+    #     # print_groups(groups)
+    # elif s == 3:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         permute_intt(group0, group1, intt=intt)
+    #         BFU(group0, group1, [twiddles[intt][k + i * 2 + j % 2] for j in range(num_bfu)], intt=intt)
+    #         permute_ntt(group0, group1, intt=intt)
+    #     # print_groups(groups)
+    # elif s == 4:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         permute_intt(group0, group1, intt=intt)
+    #         BFU(group0, group1, [twiddles[intt][k + i * 4 + j % 4] for j in range(num_bfu)], intt=intt)
+    #         permute_ntt(group0, group1, intt=intt)
+    #     # print_groups(groups)
+    # elif s == 5:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         permute_intt(group0, group1, intt=intt)
+    #         BFU(group0, group1, [twiddles[intt][k + i * 8 + j % 8] for j in range(num_bfu)], intt=intt)
+    #         permute_ntt(group0, group1, intt=intt)
+    #     # print_groups(groups)
+    # elif s == 6:
+    #     for i in range(len(banks[0])):
+    #         group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
+    #         # print(group_indices)
+    #         group0 = groups[group_indices[0]]
+    #         group1 = groups[group_indices[1]]
+    #         permute_intt(group0, group1, intt=intt)
+    #         permute_intt(group0, group1, intt=intt)
+    #         BFU(group0, group1, [twiddles[intt][k + i * 16 + j % 16] for j in range(num_bfu)], intt=intt)
+    #         permute_ntt(group0, group1, intt=intt)
+    #         permute_ntt(group0, group1, intt=intt)
+    #     # print_groups(groups)
 
 def ntt(input_data, num_bfu, intt=False):
     banks = [[], []]
@@ -214,7 +233,7 @@ def ntt(input_data, num_bfu, intt=False):
         banks[xor].append(i)
 
     k = 64 if intt else 1
-    for s in range(1, 8):
+    for s in range(7):
         stage(s, k, banks, groups, num_bfu, intt=intt)
         k = k >> 1 if intt else k << 1
     
@@ -232,7 +251,7 @@ def ntt(input_data, num_bfu, intt=False):
 def main():
     input_data = [i for i in range(256)]
     ntt(input_data, 32, intt=True)
-    ntt(input_data, 32, intt=False)
+    # ntt(input_data, 32, intt=False)
     print("Final output:")
     for i in range(0, len(input_data), 16):
         print(" ".join(f"{input_data[j]:5d}" for j in range(i, i + 16)), "")
