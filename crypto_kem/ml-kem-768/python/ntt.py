@@ -54,8 +54,11 @@ def int16(x: int) -> int:
 
 def montgomery_reduce(a: int) -> int:
     """Montgomery reduction"""
+    # reg 1
     t = int16(a * QINV)
+    # reg 2
     t = (a - t * Q) >> 16
+    # reg 3
     return t
 
 # def barrett_reduce(a: int) -> int:
