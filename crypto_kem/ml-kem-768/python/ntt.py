@@ -58,13 +58,13 @@ def montgomery_reduce(a: int) -> int:
     t = (a - t * Q) >> 16
     return t
 
-def barrett_reduce(a: int) -> int:
-    """Barrett reduction"""
-    t = int16(((1 << 26) + Q // 2) // Q)
-    t = (t * a + (1 << 25)) >> 26
-    t *= Q
-    t = a - t
-    return t
+# def barrett_reduce(a: int) -> int:
+#     """Barrett reduction"""
+#     t = int16(((1 << 26) + Q // 2) // Q)
+#     t = (t * a + (1 << 25)) >> 26
+#     t *= Q
+#     t = a - t
+#     return t
 
 def fqmul(a: int, b: int) -> int:
     """Multiplication followed by Montgomery reduction"""
@@ -78,7 +78,10 @@ def BFU(vec0, vec1, twiddles, intt=False):
             vec1[i] = vec0[i] - t
             vec0[i] = vec0[i] + t
         else:
-            vec0[i], vec1[i] = barrett_reduce(vec0[i] + vec1[i]), fqmul(twiddles[i], vec1[i] - vec0[i])
+            u = vec0[i] + vec1[i]
+            u = u if u < Q else u - Q
+            # vec0[i], vec1[i] = barrett_reduce(vec0[i] + vec1[i]), fqmul(twiddles[i], vec1[i] - vec0[i])
+            vec0[i], vec1[i] = u, fqmul(twiddles[i], vec1[i] - vec0[i])
 
 def print_groups(groups):
     """Print the groups of indices."""
