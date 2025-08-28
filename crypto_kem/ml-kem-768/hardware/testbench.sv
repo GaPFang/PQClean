@@ -10,19 +10,31 @@ module ntt_tb;
   logic rst;
   logic ready;
   logic valid;
+  logic tmp_valid;
+  logic signed [15:0] tmp_data;
 
   // Input / output arrays (SystemVerilog unpacked arrays)
   logic signed [15:0] i_data;
-  wire  signed [15:0] o_data;
+  logic signed [15:0] o_data;
   logic signed [15:0] r_out [0:255];
 
   // Instantiate DUT (adjust instance name / port names if your module differs)
-  ntt dut (
+  ntt dut_ntt (
     .i_clk   (clk),
     .i_rst   (rst),
     .i_ready (ready),
-    .i_intt  (1'b1),
+    .i_intt  (1'b0),
     .i_data  (i_data),
+    .o_valid (tmp_valid),
+    .o_data  (tmp_data)
+  );
+
+  ntt dut_intt (
+    .i_clk   (clk),
+    .i_rst   (rst),
+    .i_ready (tmp_valid),
+    .i_intt  (1'b1),
+    .i_data  (tmp_data),
     .o_valid (valid),
     .o_data  (o_data)
   );
