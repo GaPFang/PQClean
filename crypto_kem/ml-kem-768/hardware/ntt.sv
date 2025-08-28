@@ -1,131 +1,209 @@
-module ntt (
-    input  clk,
-    input  rst,
-    input  start,
-    input  signed [15:0] r_in [0:255],
-    output done,
-    output logic signed [15:0] r_out [0:255]
+module ntt # (
+    parameter [5:0] BFU_ARR_SIZE = 32 // Size of the BFU array
+) (
+    input  i_clk,
+    input  i_rst,
+    input  i_ready,
+    input  i_intt, // intterse NTT flag
+    input  signed [15:0] i_data,
+    output o_valid,
+    output logic signed [15:0] o_data [0:7][0:31]
 );
 
-    // --- ROM for zetas ---
-    logic signed [15:0] zetas [0:127];
+    // --- ROM for twiddles ---
+    logic signed [15:0] twiddles [0:127];
     initial begin
-        zetas[0]  = -1044;  zetas[1]  =  -758;  zetas[2]  =  -359;  zetas[3]  = -1517;
-        zetas[4]  =  1493;  zetas[5]  =  1422;  zetas[6]  =   287;  zetas[7]  =   202;
-        zetas[8]  =  -171;  zetas[9]  =   622;  zetas[10] =  1577;  zetas[11] =   182;
-        zetas[12] =   962;  zetas[13] = -1202;  zetas[14] = -1474;  zetas[15] =  1468;
-        zetas[16] =   573;  zetas[17] = -1325;  zetas[18] =   264;  zetas[19] =   383;
-        zetas[20] =  -829;  zetas[21] =  1458;  zetas[22] = -1602;  zetas[23] =  -130;
-        zetas[24] =  -681;  zetas[25] =  1017;  zetas[26] =   732;  zetas[27] =   608;
-        zetas[28] = -1542;  zetas[29] =   411;  zetas[30] =  -205;  zetas[31] = -1571;
-        zetas[32] =  1223;  zetas[33] =   652;  zetas[34] =  -552;  zetas[35] =  1015;
-        zetas[36] = -1293;  zetas[37] =  1491;  zetas[38] =  -282;  zetas[39] = -1544;
-        zetas[40] =   516;  zetas[41] =    -8;  zetas[42] =  -320;  zetas[43] =  -666;
-        zetas[44] = -1618;  zetas[45] = -1162;  zetas[46] =   126;  zetas[47] =  1469;
-        zetas[48] =  -853;  zetas[49] =   -90;  zetas[50] =  -271;  zetas[51] =   830;
-        zetas[52] =   107;  zetas[53] = -1421;  zetas[54] =  -247;  zetas[55] =  -951;
-        zetas[56] =  -398;  zetas[57] =   961;  zetas[58] = -1508;  zetas[59] =  -725;
-        zetas[60] =   448;  zetas[61] = -1065;  zetas[62] =   677;  zetas[63] = -1275;
-        zetas[64] = -1103;  zetas[65] =   430;  zetas[66] =   555;  zetas[67] =   843;
-        zetas[68] = -1251;  zetas[69] =   871;  zetas[70] =  1550;  zetas[71] =   105;
-        zetas[72] =   422;  zetas[73] =   587;  zetas[74] =   177;  zetas[75] =  -235;
-        zetas[76] =  -291;  zetas[77] =  -460;  zetas[78] =  1574;  zetas[79] =  1653;
-        zetas[80] =  -246;  zetas[81] =   778;  zetas[82] =  1159;  zetas[83] =  -147;
-        zetas[84] =  -777;  zetas[85] =  1483;  zetas[86] =  -602;  zetas[87] =  1119;
-        zetas[88] = -1590;  zetas[89] =   644;  zetas[90] =  -872;  zetas[91] =   349;
-        zetas[92] =   418;  zetas[93] =   329;  zetas[94] =  -156;  zetas[95] =   -75;
-        zetas[96] =   817;  zetas[97] =  1097;  zetas[98] =   603;  zetas[99] =   610;
-        zetas[100]=  1322;  zetas[101]= -1285;  zetas[102]= -1465;  zetas[103]=   384;
-        zetas[104]= -1215;  zetas[105]=  -136;  zetas[106]=  1218;  zetas[107]= -1335;
-        zetas[108]=  -874;  zetas[109]=   220;  zetas[110]= -1187;  zetas[111]= -1659;
-        zetas[112]= -1185;  zetas[113]= -1530;  zetas[114]= -1278;  zetas[115]=   794;
-        zetas[116]= -1510;  zetas[117]=  -854;  zetas[118]=  -870;  zetas[119]=   478;
-        zetas[120]=  -108;  zetas[121]=  -308;  zetas[122]=   996;  zetas[123]=   991;
-        zetas[124]=   958;  zetas[125]= -1460;  zetas[126]=  1522;  zetas[127]=  1628;
+        twiddles[0]  = -1044;  twiddles[1]  =  -758;  twiddles[2]  =  -359;  twiddles[3]  = -1517;
+        twiddles[4]  =  1493;  twiddles[5]  =  1422;  twiddles[6]  =   287;  twiddles[7]  =   202;
+        twiddles[8]  =  -171;  twiddles[9]  =   622;  twiddles[10] =  1577;  twiddles[11] =   182;
+        twiddles[12] =   962;  twiddles[13] = -1202;  twiddles[14] = -1474;  twiddles[15] =  1468;
+        twiddles[16] =   573;  twiddles[17] = -1325;  twiddles[18] =   264;  twiddles[19] =   383;
+        twiddles[20] =  -829;  twiddles[21] =  1458;  twiddles[22] = -1602;  twiddles[23] =  -130;
+        twiddles[24] =  -681;  twiddles[25] =  1017;  twiddles[26] =   732;  twiddles[27] =   608;
+        twiddles[28] = -1542;  twiddles[29] =   411;  twiddles[30] =  -205;  twiddles[31] = -1571;
+        twiddles[32] =  1223;  twiddles[33] =   652;  twiddles[34] =  -552;  twiddles[35] =  1015;
+        twiddles[36] = -1293;  twiddles[37] =  1491;  twiddles[38] =  -282;  twiddles[39] = -1544;
+        twiddles[40] =   516;  twiddles[41] =    -8;  twiddles[42] =  -320;  twiddles[43] =  -666;
+        twiddles[44] = -1618;  twiddles[45] = -1162;  twiddles[46] =   126;  twiddles[47] =  1469;
+        twiddles[48] =  -853;  twiddles[49] =   -90;  twiddles[50] =  -271;  twiddles[51] =   830;
+        twiddles[52] =   107;  twiddles[53] = -1421;  twiddles[54] =  -247;  twiddles[55] =  -951;
+        twiddles[56] =  -398;  twiddles[57] =   961;  twiddles[58] = -1508;  twiddles[59] =  -725;
+        twiddles[60] =   448;  twiddles[61] = -1065;  twiddles[62] =   677;  twiddles[63] = -1275;
+        twiddles[64] = -1103;  twiddles[65] =   430;  twiddles[66] =   555;  twiddles[67] =   843;
+        twiddles[68] = -1251;  twiddles[69] =   871;  twiddles[70] =  1550;  twiddles[71] =   105;
+        twiddles[72] =   422;  twiddles[73] =   587;  twiddles[74] =   177;  twiddles[75] =  -235;
+        twiddles[76] =  -291;  twiddles[77] =  -460;  twiddles[78] =  1574;  twiddles[79] =  1653;
+        twiddles[80] =  -246;  twiddles[81] =   778;  twiddles[82] =  1159;  twiddles[83] =  -147;
+        twiddles[84] =  -777;  twiddles[85] =  1483;  twiddles[86] =  -602;  twiddles[87] =  1119;
+        twiddles[88] = -1590;  twiddles[89] =   644;  twiddles[90] =  -872;  twiddles[91] =   349;
+        twiddles[92] =   418;  twiddles[93] =   329;  twiddles[94] =  -156;  twiddles[95] =   -75;
+        twiddles[96] =   817;  twiddles[97] =  1097;  twiddles[98] =   603;  twiddles[99] =   610;
+        twiddles[100]=  1322;  twiddles[101]= -1285;  twiddles[102]= -1465;  twiddles[103]=   384;
+        twiddles[104]= -1215;  twiddles[105]=  -136;  twiddles[106]=  1218;  twiddles[107]= -1335;
+        twiddles[108]=  -874;  twiddles[109]=   220;  twiddles[110]= -1187;  twiddles[111]= -1659;
+        twiddles[112]= -1185;  twiddles[113]= -1530;  twiddles[114]= -1278;  twiddles[115]=   794;
+        twiddles[116]= -1510;  twiddles[117]=  -854;  twiddles[118]=  -870;  twiddles[119]=   478;
+        twiddles[120]=  -108;  twiddles[121]=  -308;  twiddles[122]=   996;  twiddles[123]=   991;
+        twiddles[124]=   958;  twiddles[125]= -1460;  twiddles[126]=  1522;  twiddles[127]=  1628;
+    end
+
+    logic signed [2:0] banks [0:1][0:3];
+    initial begin
+        banks[0][0] = 3'd0; banks[1][0] = 3'd1;
+        banks[0][1] = 3'd3; banks[1][1] = 3'd2;
+        banks[0][2] = 3'd5; banks[1][2] = 3'd4;
+        banks[0][3] = 3'd6; banks[1][3] = 3'd7;
     end
 
     localparam [15:0] KYBER_N = 256; // Size of the NTT
-    localparam signed [15:0] KYBER_Q = 3329; // Modulus for the NTT
-    localparam signed [15:0] KYBER_Q_INV = -3327; // Inverse of KYBER_Q in the field
 
     // --- Internal registers ---
+    logic intt_r, intt_w;
     logic [7:0] len_r, len_w;
-    logic [8:0] start_idx_r, start_idx_w, start_idx_tmp;
-    logic signed [15:0] zeta_r, zeta_w, t_r, t_w;
-    logic signed [15:0] r_out_r [0:255], r_out_w [0:255];
-    logic [7:0] j_r, j_w, k_r, k_w;
+    logic [2:0] stage_r, stage_w;
+    logic signed [15:0] groups_r [0:7][0:BFU_ARR_SIZE-1], groups_w [0:7][0:BFU_ARR_SIZE-1];
     logic done_r, done_w;
 
-    integer i;
-
-    // fqmul function
-    function signed [15:0] fqmul;
-        input signed [15:0] a;
-        input signed [15:0] b;
-        logic signed [31:0] a_times_b;
-        logic signed [15:0] tmp1;
-        logic signed [31:0] tmp2;
-        begin
-            a_times_b = a * b;
-            tmp1 = a_times_b * KYBER_Q_INV;
-            tmp2 = a_times_b - tmp1 * KYBER_Q;
-            fqmul = tmp2 >>> 16;
-        end
-    endfunction
+    integer i, j;
 
     // FSM states
     localparam S_IDLE  = 0,
-               S_COMP = 1,
-               S_DONE  = 2;
+               S_COMP  = 1,
+               S_STORE = 2,
+               S_DONE  = 3;
     logic [1:0] state_r, state_w;
 
     assign done = done_r;
 
+    // BFU_arr
+    genvar gi;
+    logic [15:0] BFU_arr_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] BFU_arr_b [0:BFU_ARR_SIZE-1];
+    logic [15:0] BFU_arr_twiddle [0:BFU_ARR_SIZE-1];
+    logic [15:0] BFU_arr_o_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] BFU_arr_o_b [0:BFU_ARR_SIZE-1];
+
+    generate
+        for (gi = 0; gi < BFU_ARR_SIZE; gi = gi + 1) begin : BFU_arr
+            BFU bfu_inst (
+                .i_clk(i_clk),
+                .i_intt(intt_r),
+                .i_a(BFU_arr_a[gi]),
+                .i_b(BFU_arr_b[gi]),
+                .i_twiddle(BFU_arr_twiddle[gi]),
+                .o_a(BFU_arr_o_a[gi]),
+                .o_b(BFU_arr_o_b[gi])
+            );
+        end
+    endgenerate
+
+    logic [15:0] permute_ntt_1_o_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_ntt_1_o_b [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_ntt_2_o_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_ntt_2_o_b [0:BFU_ARR_SIZE-1];
+
+    PERMUTE_NTT #(
+        .HALF_NUM_BFU(BFU_ARR_SIZE/2)
+    ) permute_ntt_inst_1 (
+        .i_a(BFU_arr_o_a),
+        .i_b(BFU_arr_o_b),
+        .o_a(permute_ntt_1_o_a),
+        .o_b(permute_ntt_1_o_b)
+    );
+
+    PERMUTE_NTT #(
+        .HALF_NUM_BFU(BFU_ARR_SIZE/2)
+    ) permute_ntt_inst_2 (
+        .i_a(permute_ntt_1_o_a),
+        .i_b(permute_ntt_1_o_b),
+        .o_a(permute_ntt_2_o_a),
+        .o_b(permute_ntt_2_o_b)
+    );
+
+    logic [1:0] cnt_r, cnt_w;
+    logic [15:0] twiddles_idx;
+    logic [2:0] group_idx [0:1];
+
+    assign o_valid = done_r;
+    assign o_data = groups_r;
+
     always @(*) begin
         state_w = state_r;
         len_w = len_r;
-        start_idx_w = start_idx_r;
-        start_idx_tmp = start_idx_r;
-        j_w = j_r;
-        k_w = k_r;
-        zeta_w = zetas[k_w];
         done_w = 0;
-        t_w = fqmul(zeta_w, r_out_r[start_idx_r + len_r]);
-        for (i = 0; i < KYBER_N; i = i + 1) begin
-            r_out[i] = r_out_r[i];
-            r_out_w[i] = r_out_r[i];
+        cnt_w = cnt_r;
+        for (i = 0; i < 8; i = i + 1) begin
+            for (j = 0; j < 32; j = j + 1) begin
+                groups_w[i][j] = groups_r[i][j];
+            end
         end
+        case (stage_r)
+            0: begin
+                group_idx[0] = banks[^cnt_r][cnt_r >> 1];
+                group_idx[1] = banks[1^(^cnt_r)][(cnt_r >> 1) + 2];
+            end
+            1: begin
+                group_idx[0] = banks[^cnt_r][(cnt_r >> 1) << 1];
+                group_idx[1] = banks[1^(^cnt_r)][((cnt_r >> 1) << 1) + 1];
+            end
+            default: begin
+                group_idx[0] = banks[^cnt_r][cnt_r];
+                group_idx[1] = banks[1^(^cnt_r)][cnt_r];
+            end
+        endcase
         case (state_r)
             S_IDLE: begin
-                for (i = 0; i < KYBER_N; i = i + 1) begin
-                    r_out_w[i] = r_in[i];
-                end
-                len_w = {1'b1, 7'b0};
-                k_w = 1;
+                len_w = len_r;
+                intt_w = i_intt;
                 done_w = 0;
-                start_idx_w = 0;
-                if (start) begin
-                    state_w = S_COMP;
+                if (i_ready) begin
+                    len_w = len_r + 1;
+                    groups_w[len_r[7:5]][len_r[4:0]] = i_data;
+                    stage_w = 0;
+                    cnt_w = 0;
+                    if (len_w == 0) begin
+                        state_w = S_COMP;
+                    end
                 end
             end
 
             S_COMP: begin
-                r_out_w[start_idx_r + len_r] = r_out_r[start_idx_r] - t_w;
-                r_out_w[start_idx_r] = r_out_r[start_idx_r] + t_w;
-
-                j_w = j_r + 1;
-                if (j_w >= len_r) begin
-                    j_w = 0;
-                    k_w = k_r + 1;
-                    start_idx_tmp = start_idx_r + len_r;
+                for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+                    BFU_arr_a[i] = groups_r[group_idx[0]][i];
+                    BFU_arr_b[i] = groups_r[group_idx[1]][i];
                 end
-                start_idx_w = start_idx_tmp + 1;
-                if (start_idx_w >= KYBER_N) begin
-                    len_w = len_r >> 1;
-                    if (len_r == 2) begin
+                // twiddles_idx = (1 << stage_r) + ((stage_r < 2) ? (cnt_r >> (2 - stage_r)) : (cnt_r << (stage_r - 2)));
+                twiddles_idx = (1 << stage_r) + ((cnt_r << stage_r) >> 2);
+                for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+                    BFU_arr_twiddle[i] = (stage_r < 3) ? twiddles[twiddles_idx] : twiddles[twiddles_idx + (((i << (7 - stage_r)) & 5'd31) >> (7 - stage_r))];
+                end
+                cnt_w = cnt_r + 1;
+                if (cnt_r == 3) begin
+                    state_w = S_STORE;
+                end
+            end
+
+            S_STORE: begin
+                for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+                    if (stage_r < 2) begin
+                        groups_w[group_idx[0]][i] = BFU_arr_o_a[i];
+                        groups_w[group_idx[1]][i] = BFU_arr_o_b[i];
+                    end else if (stage_r == 6) begin
+                        groups_w[group_idx[0]][i] = permute_ntt_2_o_a[i];
+                        groups_w[group_idx[1]][i] = permute_ntt_2_o_b[i];
+                    end else begin
+                        groups_w[group_idx[0]][i] = permute_ntt_1_o_a[i];
+                        groups_w[group_idx[1]][i] = permute_ntt_1_o_b[i];
+                    end
+                end
+                cnt_w = cnt_r + 1;
+                if (cnt_r == 3) begin
+                    if (stage_r == 6) begin
+                        stage_w = 0;
                         state_w = S_DONE;
                     end else begin
-                        start_idx_w = 0;
+                        stage_w = stage_r + 1;
+                        state_w = S_COMP;
                     end
                 end
             end
@@ -137,33 +215,32 @@ module ntt (
         endcase
     end
 
-    always @(posedge clk or posedge rst) begin
-        if (rst) begin
+    always @(posedge i_clk or posedge i_rst) begin
+        if (i_rst) begin
             state_r <= S_IDLE;
             len_r <= 0;
-            start_idx_r <= 0;
-            zeta_r <= 0;
+            intt_r <= 0;
+            cnt_r <= 0;
+            stage_r <= 0;
             done_r <= 0;
-            t_r <= 0;
-            j_r <= 0;
-            k_r <= 0;
-            for (i = 0; i < KYBER_N; i = i + 1) begin
-                r_out_r[i] <= 0;
+            for (i = 0; i < 8; i = i + 1) begin
+                for (j = 0; j < 32; j = j + 1) begin
+                    groups_r[i][j] <= 0;
+                end
             end
         end else begin
             state_r <= state_w;
             len_r <= len_w;
-            start_idx_r <= start_idx_w;
-            zeta_r <= zeta_w;
+            intt_r <= intt_w;
+            cnt_r <= cnt_w;
+            stage_r <= stage_w;
             done_r <= done_w;
-            t_r <= t_w;
-            j_r <= j_w;
-            k_r <= k_w;
-            for (i = 0; i < KYBER_N; i = i + 1) begin
-                r_out_r[i] <= r_out_w[i];
+            for (i = 0; i < 8; i = i + 1) begin
+                for (j = 0; j < 32; j = j + 1) begin
+                    groups_r[i][j] <= groups_w[i][j];
+                end
             end
         end
     end
 
 endmodule
-
