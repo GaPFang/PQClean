@@ -138,8 +138,9 @@ def stage(s: int, k: int, banks: list, groups: list, num_bfu: int, intt=False):
     if intt:
         s = 6 - s  # Reverse the stage for inverse NTT
     for i in range(len(banks[0])):
+        twiddles_idx = k + ((i << s) >> 2)
+        twiddles_used = [twiddles[intt][twiddles_idx] for j in range(num_bfu)]
         group_indices = [banks[xor_all_bits(i)][i], banks[xor_all_bits(i) ^ 1][i]]
-        twiddles_used = [twiddles[intt][k + ((i >> 2) << s)] for _ in range(num_bfu)]
         if s == 0:
             group_indices = [banks[xor_all_bits(i)][i // 2], banks[xor_all_bits(i) ^ 1][i // 2 + 2]]
         if s == 1:
@@ -147,8 +148,8 @@ def stage(s: int, k: int, banks: list, groups: list, num_bfu: int, intt=False):
         group0 = groups[group_indices[0]]
         group1 = groups[group_indices[1]]
         if s >= 2:
-            twiddles_used = [twiddles[intt][k + ((i << (s - 2))) + (j % (1 << (s - 2)))] for j in range(num_bfu)]
             permute_intt(group0, group1, intt=intt)
+            twiddles_used = [twiddles[intt][twiddles_idx + (j % (1 << (s - 2)))] for j in range(num_bfu)]
         if s == 6:
             permute_intt(group0, group1, intt=intt)
         BFU(group0, group1, twiddles_used, intt=intt)
@@ -250,8 +251,8 @@ def ntt(input_data, num_bfu, intt=False):
 
 def main():
     input_data = [i for i in range(256)]
-    ntt(input_data, 32, intt=True)
-    # ntt(input_data, 32, intt=False)
+    # ntt(input_data, 32, intt=True)
+    ntt(input_data, 32, intt=False)
     print("Final output:")
     for i in range(0, len(input_data), 16):
         print(" ".join(f"{input_data[j]:5d}" for j in range(i, i + 16)), "")
