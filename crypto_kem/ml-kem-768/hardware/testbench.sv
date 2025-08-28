@@ -20,7 +20,7 @@ module ntt_tb;
     .i_clk   (clk),
     .i_rst   (rst),
     .i_ready (ready),
-    .i_intt  (1'b0),
+    .i_intt  (1'b1),
     .i_data  (r_in),
     .o_valid (done),
     .o_data  (r_out)
@@ -35,11 +35,11 @@ module ntt_tb;
   // Test scenario
   integer i, j;
   initial begin
-    // $fsdbDumpfile("ntt_tb.fsdb");
-    // $fsdbDumpvars;
-    // $fsdbDumpMDA;
-    $dumpfile("ntt_tb.vcd");
-    $dumpvars(0, ntt_tb);
+    $fsdbDumpfile("ntt_tb.fsdb");
+    $fsdbDumpvars;
+    $fsdbDumpMDA;
+    // $dumpfile("ntt_tb.vcd");
+    // $dumpvars(0, ntt_tb);
 
     // Reset
     rst = 1;

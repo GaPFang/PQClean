@@ -14,3 +14,4 @@
 ./ntt.sv
 ./BFU.sv
 ./permute_ntt.sv
+./permute_intt.sv
