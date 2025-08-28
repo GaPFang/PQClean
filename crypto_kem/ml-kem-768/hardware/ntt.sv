@@ -5,9 +5,9 @@ module ntt # (
     input  i_rst,
     input  i_ready,
     input  i_intt, // intterse NTT flag
-    input  signed [15:0] i_data,
-    output o_valid,
-    output logic signed [15:0] o_data [0:7][0:31]
+    input  [15:0] i_data,
+    output logic o_valid,
+    output logic [15:0] o_data
 );
 
     // --- ROM for twiddles ---
@@ -108,41 +108,42 @@ module ntt # (
                S_DONE  = 3;
     logic [1:0] state_r, state_w;
 
-    assign done = done_r;
-
     // BFU_arr
     genvar gi;
-    logic [15:0] BFU_arr_a [0:BFU_ARR_SIZE-1];
-    logic [15:0] BFU_arr_b [0:BFU_ARR_SIZE-1];
+    logic [15:0] BFU_arr_i_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] BFU_arr_i_b [0:BFU_ARR_SIZE-1];
     logic [15:0] BFU_arr_twiddle [0:BFU_ARR_SIZE-1];
     logic [15:0] BFU_arr_o_a [0:BFU_ARR_SIZE-1];
     logic [15:0] BFU_arr_o_b [0:BFU_ARR_SIZE-1];
+    logic [1:0] cnt_r, cnt_w;
+    logic [15:0] twiddles_idx;
+    logic [2:0] group_idx [0:1];
 
-    logic [15:0] permute_intt_0_o_a [0:BFU_ARR_SIZE-1];
-    logic [15:0] permute_intt_0_o_b [0:BFU_ARR_SIZE-1];
-    logic [15:0] permute_intt_1_o_a [0:BFU_ARR_SIZE-1];
-    logic [15:0] permute_intt_1_o_b [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_intt_0_i_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_intt_0_i_b [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_intt_1_i_a [0:BFU_ARR_SIZE-1];
+    logic [15:0] permute_intt_1_i_b [0:BFU_ARR_SIZE-1];
 
     PERMUTE_INTT #(
         .HALF_NUM_BFU(BFU_ARR_SIZE/2)
-    ) permute_intt_inst_1 (
-        .i_a(BFU_arr_a),
-        .i_b(BFU_arr_b),
+    ) permute_intt_inst_0 (
+        .i_a(permute_intt_0_i_a),
+        .i_b(permute_intt_0_i_b),
         .i_intt(intt_r),
         .i_permute(stage_r >= 2),
-        .o_a(permute_intt_0_o_a),
-        .o_b(permute_intt_0_o_b)
+        .o_a(permute_intt_1_i_a),
+        .o_b(permute_intt_1_i_b)
     );
 
     PERMUTE_INTT #(
         .HALF_NUM_BFU(BFU_ARR_SIZE/2)
-    ) permute_intt_inst_2 (
-        .i_a(permute_intt_0_o_a),
-        .i_b(permute_intt_0_o_b),
+    ) permute_intt_inst_1 (
+        .i_a(permute_intt_1_i_a),
+        .i_b(permute_intt_1_i_b),
         .i_intt(intt_r),
         .i_permute(stage_r == 6),
-        .o_a(permute_intt_1_o_a),
-        .o_b(permute_intt_1_o_b)
+        .o_a(BFU_arr_i_a),
+        .o_b(BFU_arr_i_b)
     );
 
     generate
@@ -150,8 +151,8 @@ module ntt # (
             BFU bfu_inst (
                 .i_clk(i_clk),
                 .i_intt(intt_r),
-                .i_a(permute_intt_1_o_a[gi]),
-                .i_b(permute_intt_1_o_b[gi]),
+                .i_a(BFU_arr_i_a[gi]),
+                .i_b(BFU_arr_i_b[gi]),
                 .i_twiddle(BFU_arr_twiddle[gi]),
                 .o_a(BFU_arr_o_a[gi]),
                 .o_b(BFU_arr_o_b[gi])
@@ -166,7 +167,7 @@ module ntt # (
 
     PERMUTE_NTT #(
         .HALF_NUM_BFU(BFU_ARR_SIZE/2)
-    ) permute_ntt_inst_1 (
+    ) permute_ntt_inst_0 (
         .i_a(BFU_arr_o_a),
         .i_b(BFU_arr_o_b),
         .i_intt(intt_r),
@@ -177,7 +178,7 @@ module ntt # (
 
     PERMUTE_NTT #(
         .HALF_NUM_BFU(BFU_ARR_SIZE/2)
-    ) permute_ntt_inst_2 (
+    ) permute_ntt_inst_1 (
         .i_a(permute_ntt_0_o_a),
         .i_b(permute_ntt_0_o_b),
         .i_intt(intt_r),
@@ -185,13 +186,6 @@ module ntt # (
         .o_a(permute_ntt_1_o_a),
         .o_b(permute_ntt_1_o_b)
     );
-
-    logic [1:0] cnt_r, cnt_w;
-    logic [15:0] twiddles_idx;
-    logic [2:0] group_idx [0:1];
-
-    assign o_valid = done_r;
-    assign o_data = groups_r;
 
     always @(*) begin
         state_w = state_r;
@@ -235,8 +229,8 @@ module ntt # (
 
             S_COMP: begin
                 for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
-                    BFU_arr_a[i] = groups_r[group_idx[0]][i];
-                    BFU_arr_b[i] = groups_r[group_idx[1]][i];
+                    permute_intt_0_i_a[i] = groups_r[group_idx[0]][i];
+                    permute_intt_0_i_b[i] = groups_r[group_idx[1]][i];
                 end
                 // twiddles_idx = (1 << stage_r) + ((stage_r < 2) ? (cnt_r >> (2 - stage_r)) : (cnt_r << (stage_r - 2)));
                 twiddles_idx = (1 << stage_r) + ((cnt_r << stage_r) >> 2);
@@ -266,8 +260,12 @@ module ntt # (
             end
 
             S_DONE: begin
-                done_w = 1;
-                state_w = S_IDLE;
+                o_valid = 1;
+                o_data = groups_r[len_r[7:5]][len_r[4:0]];
+                len_w = len_r + 1;
+                if (len_w == 0) begin
+                    state_w = S_IDLE;
+                end
             end
         endcase
     end
