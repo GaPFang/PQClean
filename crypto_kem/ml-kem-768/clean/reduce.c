@@ -32,10 +32,16 @@ int16_t PQCLEAN_MLKEM768_CLEAN_montgomery_reduce(int32_t a) {
 * Returns:     integer in {-(q-1)/2,...,(q-1)/2} congruent to a modulo q.
 **************************************************/
 int16_t PQCLEAN_MLKEM768_CLEAN_barrett_reduce(int16_t a) {
+    // 1
     int16_t t;
     const int16_t v = ((1 << 26) + KYBER_Q / 2) / KYBER_Q;
 
     t  = ((int32_t)v * a + (1 << 25)) >> 26;
     t *= KYBER_Q;
     return a - t;
+
+    // 2
+    const int16_t mu = (1 << 24) / KYBER_Q;
+    int16_t q = ((a >> 11) * mu) >> 13;
+    return a - q * KYBER_Q;
 }

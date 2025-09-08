@@ -14,12 +14,13 @@ int main(void) {
     }
 
     // Step 2: Run forward NTT
-    PQCLEAN_MLKEM768_CLEAN_ntt(r);
+    // PQCLEAN_MLKEM768_CLEAN_ntt(r);
+    PQCLEAN_MLKEM768_CLEAN_invntt(r);
 
     // Step 3: Output result
     printf("NTT result:\n");
     for (int i = 0; i < 256; i++) {
-        printf("%6d ", r[i]);
+        printf("%5d ", r[i]);
         if ((i + 1) % 16 == 0) printf("\n");
     }
 
