@@ -4,7 +4,7 @@ module ntt # (
     input  i_clk,
     input  i_rst,
     input  i_ready,
-    input  i_intt, // intterse NTT flag
+    input  i_intt, // inverse NTT flag
     input  [15:0] i_data,
     output logic o_valid,
     output logic [15:0] o_data
@@ -14,7 +14,7 @@ module ntt # (
     logic signed [15:0] twiddles [0:1][0:127];
     initial begin
         // First row
-        twiddles[0][0]  = -1044;  twiddles[0][1]  =  -758;  twiddles[0][2]  =  -359;  twiddles[0][3]  = -1517;
+        twiddles[0][0]  =  1441;  twiddles[0][1]  =  -758;  twiddles[0][2]  =  -359;  twiddles[0][3]  = -1517;
         twiddles[0][4]  =  1493;  twiddles[0][5]  =  1422;  twiddles[0][6]  =   287;  twiddles[0][7]  =   202;
         twiddles[0][8]  =  -171;  twiddles[0][9]  =   622;  twiddles[0][10] =  1577;  twiddles[0][11] =   182;
         twiddles[0][12] =   962;  twiddles[0][13] = -1202;  twiddles[0][14] = -1474;  twiddles[0][15] =  1468;
@@ -48,7 +48,7 @@ module ntt # (
         twiddles[0][124]=   958;  twiddles[0][125]= -1460;  twiddles[0][126]=  1522;  twiddles[0][127]=  1628;
 
         // Second row
-        twiddles[1][0]  = -1044;  twiddles[1][1]  =  -758;  twiddles[1][2]  = -1517;  twiddles[1][3]  =  -359;
+        twiddles[1][0]  =  1441;  twiddles[1][1]  =  -758;  twiddles[1][2]  = -1517;  twiddles[1][3]  =  -359;
         twiddles[1][4]  =   202;  twiddles[1][5]  =   287;  twiddles[1][6]  =  1422;  twiddles[1][7]  =  1493;
         twiddles[1][8]  =  1468;  twiddles[1][9]  = -1474;  twiddles[1][10] = -1202;  twiddles[1][11] =   962;
         twiddles[1][12] =   182;  twiddles[1][13] =  1577;  twiddles[1][14] =   622;  twiddles[1][15] =  -171;
@@ -105,8 +105,9 @@ module ntt # (
     localparam S_IDLE  = 0,
                S_COMP  = 1,
                S_STORE = 2,
-               S_DONE  = 3;
-    logic [1:0] state_r, state_w;
+               S_F     = 3,
+               S_DONE  = 4;
+    logic [2:0] state_r, state_w;
 
     // BFU_arr
     genvar gi;
@@ -192,10 +193,15 @@ module ntt # (
         len_w = len_r;
         done_w = 0;
         cnt_w = cnt_r;
+        intt_w = intt_r;
         for (i = 0; i < 8; i = i + 1) begin
             for (j = 0; j < 32; j = j + 1) begin
                 groups_w[i][j] = groups_r[i][j];
             end
+        end
+        for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+            permute_intt_0_i_a[i] = 0;
+            permute_intt_0_i_b[i] = 0;
         end
         case (stage_r)
             0: begin
@@ -252,9 +258,34 @@ module ntt # (
                 if (cnt_r == 3) begin
                     stage_w = intt_r ? stage_r - 1 : stage_r + 1;
                     if (stage_w == 7) begin
-                        state_w = S_DONE;
+                        state_w = intt_r ? S_F : S_DONE;
+                        stage_w = 0;
+                        intt_w = 0;
                     end else begin
                         state_w = S_COMP;
+                    end
+                end
+            end
+
+            S_F: begin
+                if (~stage_r[1]) begin
+                    for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+                        permute_intt_0_i_b[i] = groups_r[{stage_r[0], cnt_r}][i];
+                    end
+                    for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+                        BFU_arr_twiddle[i] = twiddles[0][0];
+                    end
+                end
+                if (state_r[0] | stage_r[1]) begin
+                    for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
+                        groups_w[{stage_r[1], cnt_r}][i] = BFU_arr_o_a[i];
+                    end
+                end
+                cnt_w = cnt_r + 1;
+                if (cnt_r == 3) begin
+                    stage_w = stage_r + 1;
+                    if (stage_r == 2) begin
+                        state_w = S_DONE;
                     end
                 end
             end
