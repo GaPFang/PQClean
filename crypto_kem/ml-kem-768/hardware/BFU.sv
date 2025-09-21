@@ -32,7 +32,7 @@ module BFU (
         a1_w = (i_intt & (a0_r >= KYBER_Q)) ? (a0_r - KYBER_Q) : a0_r;
         b_twiddle1_w = b0_r * twiddle0_r;
         // cycle 2
-        a2_w = a1_r;
+        a2_w = (i_intt & (a1_r <= -KYBER_Q)) ? (a1_r + KYBER_Q) : a1_r;
         b_twiddle_QINV_w = b_twiddle1_r * KYBER_QINV;
         b_twiddle2_w = b_twiddle1_r;
         // cycle 3

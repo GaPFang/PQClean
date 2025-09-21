@@ -80,8 +80,10 @@ def BFU(vec0, vec1, twiddles, intt=False):
             vec0[i], vec1[i] = vec0[i] + vec1[i], vec1[i] - vec0[i]
         t = fqmul(twiddles[i], vec1[i])
         if intt:
-            if vec0[i] > Q:
+            if vec0[i] >= Q:
                 vec0[i] -= Q
+            if vec0[i] <= -Q:
+                vec0[i] += Q
             vec1[i] = t
         if not intt:
             vec0[i], vec1[i] = vec0[i] + t, vec0[i] - t
@@ -251,8 +253,8 @@ def ntt(input_data, num_bfu, intt=False):
 
 def main():
     input_data = [i for i in range(256)]
-    # ntt(input_data, 32, intt=True)
     ntt(input_data, 32, intt=False)
+    ntt(input_data, 32, intt=True)
     print("Final output:")
     for i in range(0, len(input_data), 16):
         print(" ".join(f"{input_data[j]:5d}" for j in range(i, i + 16)), "")
