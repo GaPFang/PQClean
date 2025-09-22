@@ -39,10 +39,19 @@ module ntt_tb;
     .o_data  (o_data)
   );
 
+  integer cycles;
+
   // Clock generation: 10 ns period
   initial begin
     clk = 0;
     forever #5 clk = ~clk;
+  end
+
+  initial begin
+    while (1) begin
+      @(posedge clk);
+      cycles = cycles + 1;
+    end
   end
 
   // Test scenario
@@ -60,6 +69,7 @@ module ntt_tb;
     repeat (4) @(posedge clk);
     rst = 0;
     i_data = 0;
+    cycles = 0;
     @(posedge clk);
     ready = 1;
     // Step 1: Prepare input like C code: r[i] = i % KYBER_Q
@@ -68,6 +78,7 @@ module ntt_tb;
       @(posedge clk);
     end
     ready = 0;
+    $display("Input finish: %d cycles", cycles);
 
     // give one clock to allow o_data to be stable if needed
     @(posedge clk);
@@ -76,10 +87,15 @@ module ntt_tb;
     while (i < 256) begin
       @(negedge clk);
       if (valid) begin
+        if (i == 0) begin
+          $display("Computation finish: %d cycles", cycles);
+        end
         r_out[i] = o_data;
         i = i + 1;
       end
     end
+
+    $display("Output finish: %d cycles", cycles);
 
     // Step 3: print results, 16 per line like C code
     $display("NTT result:");
