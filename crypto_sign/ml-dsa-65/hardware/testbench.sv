@@ -25,19 +25,19 @@ module ntt_tb;
     .i_ready (ready),
     .i_intt  (1'b0),
     .i_data  (i_data),
-    .o_valid (tmp_valid),
-    .o_data  (tmp_data)
-  );
-
-  ntt dut_intt (
-    .i_clk   (clk),
-    .i_rst   (rst),
-    .i_ready (tmp_valid),
-    .i_intt  (1'b1),
-    .i_data  (tmp_data),
     .o_valid (valid),
     .o_data  (o_data)
   );
+
+  // ntt dut_intt (
+  //   .i_clk   (clk),
+  //   .i_rst   (rst),
+  //   .i_ready (tmp_valid),
+  //   .i_intt  (1'b1),
+  //   .i_data  (tmp_data),
+  //   .o_valid (valid),
+  //   .o_data  (o_data)
+  // );
 
   integer cycles;
 
