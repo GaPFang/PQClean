@@ -9,14 +9,17 @@ module BFU (
     output logic signed [31:0] o_b
 );
 
-    localparam signed [31:0] KYBER_Q = 3329; // Modulus for the NTT
-    localparam signed [31:0] KYBER_QINV = -3327; // Inverse of KYBER_Q in the field
+    // localparam signed [31:0] KYBER_Q = 3329; // Modulus for the NTT
+    // localparam signed [31:0] KYBER_QINV = -3327; // Inverse of KYBER_Q in the field
+
+    localparam signed [31:0] KYBER_Q = 8380417;
+    localparam signed [31:0] KYBER_QINV = 58728449;
 
     logic signed [31:0] a0_r, a0_w, a1_r, a1_w, a2_r, a2_w, a3_r, a3_w;
     logic signed [31:0] b0_r, b0_w;
     logic signed [31:0] twiddle0_r, twiddle0_w;
     logic signed [63:0] b_twiddle1_r, b_twiddle1_w, b_twiddle2_r, b_twiddle2_w;
-    logic signed [15:0] b_twiddle_QINV_r, b_twiddle_QINV_w;
+    logic signed [31:0] b_twiddle_QINV_r, b_twiddle_QINV_w;
     logic signed [31:0] reduced_r, reduced_w;
 
     always_comb begin
@@ -54,7 +57,7 @@ module BFU (
             b_twiddle_QINV_w = b_twiddle1_r * KYBER_QINV;
             b_twiddle2_w = b_twiddle1_r;
             // cycle 3
-            reduced_w = (b_twiddle2_r - b_twiddle_QINV_r * KYBER_Q) >>> 16;
+            reduced_w = (b_twiddle2_r - b_twiddle_QINV_r * KYBER_Q) >>> 32;
             a3_w = a2_r;
             // cycle 4
             if (i_intt) begin
