@@ -24,7 +24,7 @@ module ntt_tb;
     .i_rst   (rst),
     .i_ready (ready),
     .i_algo  (1'b1),
-    .i_intt  (1'b0),
+    .i_intt  (1'b1),
     .i_data  (i_data),
     .o_valid (valid),
     .o_data  (o_data)

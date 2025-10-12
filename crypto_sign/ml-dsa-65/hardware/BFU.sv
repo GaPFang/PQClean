@@ -50,15 +50,15 @@ module BFU (
             end
             twiddle0_w = i_twiddle;
             // cycle 1
-            a1_w = (i_intt & (a0_r >= KYBER_Q)) ? (a0_r - KYBER_Q) : a0_r;
+            a1_w = a0_r;
             b_twiddle1_w = b0_r * twiddle0_r;
             // cycle 2
-            a2_w = (i_intt & (a1_r <= -KYBER_Q)) ? (a1_r + KYBER_Q) : a1_r;
+            a2_w = a1_r;
             b_twiddle_QINV_w = b_twiddle1_r * KYBER_QINV;
             b_twiddle2_w = b_twiddle1_r;
             // cycle 3
-            reduced_w = (b_twiddle2_r - b_twiddle_QINV_r * KYBER_Q) >>> 32;
             a3_w = a2_r;
+            reduced_w = (b_twiddle2_r - b_twiddle_QINV_r * KYBER_Q) >>> 32;
             // cycle 4
             if (i_intt) begin
                 o_a = a3_r;
@@ -68,6 +68,35 @@ module BFU (
                 o_b = a3_r - reduced_r;
             end
         end
+        // end else begin
+        //     // cycle 0
+        //     if (i_intt) begin
+        //         a0_w = i_b + i_a;
+        //         b0_w = i_b - i_a;
+        //     end else begin
+        //         a0_w = i_a;
+        //         b0_w = i_b;
+        //     end
+        //     twiddle0_w = i_twiddle;
+        //     // cycle 1
+        //     a1_w = (i_intt & (a0_r >= KYBER_Q)) ? (a0_r - KYBER_Q) : a0_r;
+        //     b_twiddle1_w = b0_r * twiddle0_r;
+        //     // cycle 2
+        //     a2_w = (i_intt & (a1_r <= -KYBER_Q)) ? (a1_r + KYBER_Q) : a1_r;
+        //     b_twiddle_QINV_w = b_twiddle1_r * KYBER_QINV;
+        //     b_twiddle2_w = b_twiddle1_r;
+        //     // cycle 3
+        //     reduced_w = (b_twiddle2_r - b_twiddle_QINV_r * KYBER_Q) >>> 32;
+        //     a3_w = a2_r;
+        //     // cycle 4
+        //     if (i_intt) begin
+        //         o_a = a3_r;
+        //         o_b = reduced_r;
+        //     end else begin
+        //         o_a = a3_r + reduced_r;
+        //         o_b = a3_r - reduced_r;
+        //     end
+        // end
     end
 
     always_ff @(posedge i_clk) begin

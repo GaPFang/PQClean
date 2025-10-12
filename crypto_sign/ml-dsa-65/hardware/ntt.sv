@@ -363,7 +363,7 @@ module ntt # (
                         permute_intt_0_i_b[i] = groups_r[{stage_r[0], cnt_r}][i];
                     end
                     for (i = 0; i < BFU_ARR_SIZE; i = i + 1) begin
-                        BFU_arr_twiddle[i] = twiddles[0][0];
+                        BFU_arr_twiddle[i] = twiddles[twiddle_bank_r][0];
                     end
                 end
                 if (state_r[0] | stage_r[1]) begin
