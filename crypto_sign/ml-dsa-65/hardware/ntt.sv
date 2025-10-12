@@ -4,7 +4,7 @@ module ntt # (
     input  i_clk,
     input  i_rst,
     input  i_ready,
-    input  i_algo,
+    input  i_algo, // 0: Kyber, 1: Dilithium
     input  i_intt, // inverse NTT flag
     input  [31:0] i_data,
     output logic o_valid,
@@ -223,6 +223,7 @@ module ntt # (
                 .i_clk(i_clk),
                 .i_intt(intt_r),
                 .i_skip(bfu_skip),
+                .i_algo(algo_r),
                 .i_a(BFU_arr_i_a[gi]),
                 .i_b(BFU_arr_i_b[gi]),
                 .i_twiddle(BFU_arr_twiddle[gi]),
@@ -304,7 +305,7 @@ module ntt # (
                     cnt_w = 0;
                     if (len_w == 0) begin
                         state_w = S_COMP;
-                        twiddle_bank_r = algo_r * 2 + intt_r;
+                        twiddle_bank_r = algo_r * 2 + intt_r; // 0: Kyber NTT, 1: Kyber INTT, 2: Dilithium NTT, 3: Dilithium NTT
                     end
                 end
             end
