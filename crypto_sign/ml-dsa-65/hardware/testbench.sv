@@ -11,6 +11,8 @@ module ntt_tb;
   logic ready;
   logic valid;
   logic tmp_valid;
+  logic [31:0] i_addr;
+  logic [31:0] i_Kyber_ntt_config, i_Kyber_intt_config, i_Dilithium_ntt_config, i_Dilithium_intt_config;
   logic signed [31:0] tmp_data;
 
   // Input / output arrays (SystemVerilog unpacked arrays)
@@ -24,12 +26,10 @@ module ntt_tb;
     .ntt_rst_ni  (rst_n),
 
     .ntt_req_i   (),
-    .ntt_we_i    (ready),
+    .ntt_we_i    (ready | i_addr[0]),
     .ntt_be_i    (),
-    .ntt_addr_i  (),
-    .ntt_wdata_i (i_data),
-    .ntt_algo_i  (1'b1),
-    .ntt_intt_i  (1'b0),
+    .ntt_addr_i  (i_addr),
+    .ntt_wdata_i (i_addr[0] ? i_Dilithium_ntt_config : i_data),
     .ntt_rvalid_o(tmp_valid),
     .ntt_rdata_o (tmp_data),
     .ntt_err_o   (),
@@ -41,12 +41,10 @@ module ntt_tb;
     .ntt_rst_ni  (rst_n),
 
     .ntt_req_i   (),
-    .ntt_we_i    (tmp_valid),
+    .ntt_we_i    (tmp_valid | i_addr[0]),
     .ntt_be_i    (),
-    .ntt_addr_i  (),
-    .ntt_wdata_i (tmp_data),
-    .ntt_algo_i  (1'b1),
-    .ntt_intt_i  (1'b1),
+    .ntt_addr_i  (i_addr),
+    .ntt_wdata_i (i_addr[0] ? i_Dilithium_intt_config : tmp_data),
     .ntt_rvalid_o(valid),
     .ntt_rdata_o (o_data),
     .ntt_err_o   (),
@@ -86,6 +84,13 @@ module ntt_tb;
     cycles = 0;
     @(posedge clk);
     ready = 1;
+    i_addr = 1;
+    i_Kyber_ntt_config = 2'b00;
+    i_Kyber_intt_config = 2'b01;
+    i_Dilithium_ntt_config = 2'b10;
+    i_Dilithium_intt_config = 2'b11;
+    @(posedge clk);
+    i_addr = 0;
     // Step 1: Prepare input like C code: r[i] = i % KYBER_Q
     for (i = 0; i < 256; i = i + 1) begin
       i_data = (i % KYBER_Q); // fits in 16-bit signed

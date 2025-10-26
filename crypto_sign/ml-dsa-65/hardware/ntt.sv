@@ -1,7 +1,7 @@
 module ntt # (
     parameter DataWidth = 32,
     parameter AddressWidth = 32,
-    parameter [5:0] BFU_ARR_SIZE = 32 // Size of the BFU array
+    parameter [5:0] BFU_ARR_SIZE = 32
 ) (
     input  ntt_clk_i,
     input  ntt_rst_ni,
@@ -11,8 +11,6 @@ module ntt # (
     input  [3:0] ntt_be_i,
     input  [31:0] ntt_addr_i,
     input  [31:0] ntt_wdata_i,
-    input  ntt_algo_i, // 0: Kyber, 1: Dilithium
-    input  ntt_intt_i, // inverse NTT flag
     output logic ntt_rvalid_o,
     output logic [31:0] ntt_rdata_o,
     output ntt_err_o,
@@ -303,17 +301,20 @@ module ntt # (
         case (state_r)
             S_IDLE: begin
                 len_w = len_r;
-                intt_w = ntt_intt_i;
-                algo_w = ntt_algo_i;
                 done_w = 0;
                 if (ntt_we_i) begin
-                    len_w = len_r + 1;
-                    groups_w[len_r[7:5]][len_r[4:0]] = ntt_wdata_i;
-                    stage_w = ntt_intt_i ? 7 : 0;
-                    cnt_w = 0;
-                    if (len_w == 0) begin
-                        state_w = S_COMP;
-                        twiddle_bank_r = algo_r * 2 + intt_r; // 0: Kyber NTT, 1: Kyber INTT, 2: Dilithium NTT, 3: Dilithium NTT
+                    if (ntt_addr_i[0]) begin // config
+                        algo_w = ntt_wdata_i[1]; // 0: Kyber, 1: Dilithium
+                        intt_w = ntt_wdata_i[0]; // 0: NTT,   1: INTT
+                    end else begin           // data
+                        len_w = len_r + 1;
+                        groups_w[len_r[7:5]][len_r[4:0]] = ntt_wdata_i;
+                        stage_w = intt_r ? 7 : 0;
+                        cnt_w = 0;
+                        if (len_w == 0) begin
+                            state_w = S_COMP;
+                            twiddle_bank_r = algo_r * 2 + intt_r; // 0: Kyber NTT, 1: Kyber INTT, 2: Dilithium NTT, 3: Dilithium NTT
+                        end
                     end
                 end
             end
