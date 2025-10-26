@@ -27,6 +27,34 @@ module BFU (
     logic signed [31:0] reduced_r, reduced_w;
 
     always_comb begin
+        // cycle 0
+        if (i_intt) begin
+            a0_w = i_b + i_a;
+            b0_w = i_b - i_a;
+        end else begin
+            a0_w = i_a;
+            b0_w = i_b;
+        end
+        twiddle0_w = i_twiddle;
+        // cycle 1
+        a1_w = (i_intt & ~i_algo & (a0_r >= Q[0])) ? (a0_r - Q[0]) : a0_r;
+        b_twiddle1_w = b0_r * twiddle0_r;
+        // cycle 2
+        a2_w = (i_intt & ~i_algo & (a1_r <= -Q[0])) ? (a1_r + Q[0]) : a1_r;
+        b_twiddle_QINV_w = b_twiddle1_r * QINV[i_algo];
+        b_twiddle2_w = b_twiddle1_r;
+        // cycle 3
+        reduced_w = (b_twiddle2_r - (i_algo ? b_twiddle_QINV_r : $signed(b_twiddle_QINV_r[15:0])) * Q[i_algo]) >>> (i_algo ? 32 : 16);
+        a3_w = a2_r;
+        // cycle 4
+        if (i_intt) begin
+            o_a = a3_r;
+            o_b = reduced_r;
+        end else begin
+            o_a = a3_r + reduced_r;
+            o_b = a3_r - reduced_r;
+        end
+
         if (i_skip) begin
             // cycle 0
             a0_w = i_a;
@@ -43,34 +71,6 @@ module BFU (
             // cycle 4
             o_a = a3_r;
             o_b = reduced_r;
-        end else begin
-            // cycle 0
-            if (i_intt) begin
-                a0_w = i_b + i_a;
-                b0_w = i_b - i_a;
-            end else begin
-                a0_w = i_a;
-                b0_w = i_b;
-            end
-            twiddle0_w = i_twiddle;
-            // cycle 1
-            a1_w = (i_intt & ~i_algo & (a0_r >= Q[0])) ? (a0_r - Q[0]) : a0_r;
-            b_twiddle1_w = b0_r * twiddle0_r;
-            // cycle 2
-            a2_w = (i_intt & ~i_algo & (a1_r <= -Q[0])) ? (a1_r + Q[0]) : a1_r;
-            b_twiddle_QINV_w = b_twiddle1_r * QINV[i_algo];
-            b_twiddle2_w = b_twiddle1_r;
-            // cycle 3
-            reduced_w = (b_twiddle2_r - (i_algo ? b_twiddle_QINV_r : $signed(b_twiddle_QINV_r[15:0])) * Q[i_algo]) >>> (i_algo ? 32 : 16);
-            a3_w = a2_r;
-            // cycle 4
-            if (i_intt) begin
-                o_a = a3_r;
-                o_b = reduced_r;
-            end else begin
-                o_a = a3_r + reduced_r;
-                o_b = a3_r - reduced_r;
-            end
         end
     end
 
