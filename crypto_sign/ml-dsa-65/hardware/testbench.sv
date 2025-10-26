@@ -7,7 +7,7 @@ module ntt_tb;
 
   // Clock / reset / control
   logic clk;
-  logic rst;
+  logic rst_n;
   logic ready;
   logic valid;
   logic tmp_valid;
@@ -20,25 +20,37 @@ module ntt_tb;
 
   // Instantiate DUT (adjust instance name / port names if your module differs)
   ntt dut_ntt (
-    .i_clk   (clk),
-    .i_rst   (rst),
-    .i_ready (ready),
-    .i_algo  (1'b1),
-    .i_intt  (1'b0),
-    .i_data  (i_data),
-    .o_valid (tmp_valid),
-    .o_data  (tmp_data)
+    .ntt_clk_i   (clk),
+    .ntt_rst_ni  (rst_n),
+
+    .ntt_req_i   (),
+    .ntt_we_i    (ready),
+    .ntt_be_i    (),
+    .ntt_addr_i  (),
+    .ntt_wdata_i (i_data),
+    .ntt_algo_i  (1'b1),
+    .ntt_intt_i  (1'b0),
+    .ntt_rvalid_o(tmp_valid),
+    .ntt_rdata_o (tmp_data),
+    .ntt_err_o   (),
+    .ntt_intr_o  ()
   );
 
   ntt dut_intt (
-    .i_clk   (clk),
-    .i_rst   (rst),
-    .i_ready (tmp_valid),
-    .i_algo  (1'b1),
-    .i_intt  (1'b1),
-    .i_data  (tmp_data),
-    .o_valid (valid),
-    .o_data  (o_data)
+    .ntt_clk_i   (clk),
+    .ntt_rst_ni  (rst_n),
+
+    .ntt_req_i   (),
+    .ntt_we_i    (tmp_valid),
+    .ntt_be_i    (),
+    .ntt_addr_i  (),
+    .ntt_wdata_i (tmp_data),
+    .ntt_algo_i  (1'b1),
+    .ntt_intt_i  (1'b1),
+    .ntt_rvalid_o(valid),
+    .ntt_rdata_o (o_data),
+    .ntt_err_o   (),
+    .ntt_intr_o  ()
   );
 
   integer cycles;
@@ -66,10 +78,10 @@ module ntt_tb;
     // $dumpvars(0, ntt_tb);
 
     // Reset
-    rst = 1;
+    rst_n = 0;
     ready = 0;
     repeat (4) @(posedge clk);
-    rst = 0;
+    rst_n = 1;
     i_data = 0;
     cycles = 0;
     @(posedge clk);

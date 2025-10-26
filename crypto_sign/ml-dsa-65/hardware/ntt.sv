@@ -1,14 +1,22 @@
 module ntt # (
+    parameter DataWidth = 32,
+    parameter AddressWidth = 32,
     parameter [5:0] BFU_ARR_SIZE = 32 // Size of the BFU array
 ) (
-    input  i_clk,
-    input  i_rst,
-    input  i_ready,
-    input  i_algo, // 0: Kyber, 1: Dilithium
-    input  i_intt, // inverse NTT flag
-    input  [31:0] i_data,
-    output logic o_valid,
-    output logic [31:0] o_data
+    input  ntt_clk_i,
+    input  ntt_rst_ni,
+
+    input  ntt_req_i,
+    input  ntt_we_i,
+    input  [3:0] ntt_be_i,
+    input  [31:0] ntt_addr_i,
+    input  [31:0] ntt_wdata_i,
+    input  ntt_algo_i, // 0: Kyber, 1: Dilithium
+    input  ntt_intt_i, // inverse NTT flag
+    output logic ntt_rvalid_o,
+    output logic [31:0] ntt_rdata_o,
+    output ntt_err_o,
+    output ntt_intr_o
 );
 
     // --- ROM for twiddles ---
@@ -220,7 +228,7 @@ module ntt # (
     generate
         for (gi = 0; gi < BFU_ARR_SIZE; gi = gi + 1) begin : BFU_arr
             BFU bfu_inst (
-                .i_clk(i_clk),
+                .i_clk(ntt_clk_i),
                 .i_intt(intt_r),
                 .i_skip(bfu_skip),
                 .i_algo(algo_r),
@@ -295,13 +303,13 @@ module ntt # (
         case (state_r)
             S_IDLE: begin
                 len_w = len_r;
-                intt_w = i_intt;
-                algo_w = i_algo;
+                intt_w = ntt_intt_i;
+                algo_w = ntt_algo_i;
                 done_w = 0;
-                if (i_ready) begin
+                if (ntt_we_i) begin
                     len_w = len_r + 1;
-                    groups_w[len_r[7:5]][len_r[4:0]] = i_data;
-                    stage_w = i_intt ? 7 : 0;
+                    groups_w[len_r[7:5]][len_r[4:0]] = ntt_wdata_i;
+                    stage_w = ntt_intt_i ? 7 : 0;
                     cnt_w = 0;
                     if (len_w == 0) begin
                         state_w = S_COMP;
@@ -382,8 +390,8 @@ module ntt # (
             end
 
             S_DONE: begin
-                o_valid = 1;
-                o_data = groups_r[len_r[7:5]][len_r[4:0]];
+                ntt_rvalid_o = 1;
+                ntt_rdata_o = groups_r[len_r[7:5]][len_r[4:0]];
                 len_w = len_r + 1;
                 if (len_w == 0) begin
                     state_w = S_IDLE;
@@ -392,8 +400,8 @@ module ntt # (
         endcase
     end
 
-    always @(posedge i_clk or posedge i_rst) begin
-        if (i_rst) begin
+    always @(posedge ntt_clk_i or posedge ntt_rst_ni) begin
+        if (~ntt_rst_ni) begin
             state_r <= S_IDLE;
             len_r <= 0;
             algo_r <= 0;
