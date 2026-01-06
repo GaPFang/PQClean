@@ -938,7 +938,7 @@ module ntt # (
                 len_w = len_r;
                 done_w = 0;
                 if (ntt_we_i) begin
-                    if (ntt_addr_i[0]) begin // config
+                    if (ntt_addr_i[2]) begin // config
                         algo_w = ntt_wdata_i[1]; // 0: Kyber, 1: Dilithium
                         intt_w = ntt_wdata_i[0]; // 0: NTT,   1: INTT
                     end else begin           // data
@@ -948,7 +948,7 @@ module ntt # (
                         cnt_w = 0;
                         if (len_w == 0) begin
                             state_w = S_COMP;
-                            twiddle_bank_r = algo_r * 2 + intt_r; // 0: Kyber NTT, 1: Kyber INTT, 2: Dilithium NTT, 3: Dilithium NTT
+                            twiddle_bank_w = algo_r * 2 + intt_r; // 0: Kyber NTT, 1: Kyber INTT, 2: Dilithium NTT, 3: Dilithium NTT
                         end
                     end
                 end
@@ -1040,8 +1040,8 @@ module ntt # (
         endcase
     end
 
-    always @(posedge ntt_clk_i or posedge ntt_rst_ni) begin
-        if (~ntt_rst_ni) begin
+    always @(posedge ntt_clk_i or negedge ntt_rst_ni) begin
+        if (!ntt_rst_ni) begin
             state_r <= S_IDLE;
             len_r <= 0;
             algo_r <= 0;
